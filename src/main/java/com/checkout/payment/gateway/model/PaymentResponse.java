@@ -6,7 +6,7 @@ import java.util.UUID;
 import lombok.Builder;
 
 @Builder
-public record PostPaymentResponse(
+public record PaymentResponse(
     UUID id,
     PaymentStatus status,
     int cardNumberLastFour,
@@ -16,8 +16,8 @@ public record PostPaymentResponse(
     int amount
 ) {
 
-  public static PostPaymentResponse fromEntity(Payment payment) {
-    return PostPaymentResponse.builder()
+  public static PaymentResponse fromEntity(Payment payment) {
+    return PaymentResponse.builder()
         .id(payment.getId())
         .status(payment.getStatus())
         .cardNumberLastFour(Integer.parseInt(payment.getCardNumberLastFour()))

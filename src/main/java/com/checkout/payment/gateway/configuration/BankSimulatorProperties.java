@@ -1,14 +1,17 @@
 package com.checkout.payment.gateway.configuration;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties("bank.simulator")
+@ConfigurationProperties(prefix = "bank.simulator")
 public record BankSimulatorProperties(
-    String url,
-    Timeout timeout
+    @NotBlank String url,
+    @NotNull Timeout timeout
 ) {
 
-  record Timeout(int connect, int read) {
+  record Timeout(@Positive int connect, @Positive int read) {
 
   }
 }

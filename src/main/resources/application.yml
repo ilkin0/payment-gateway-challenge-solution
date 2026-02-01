@@ -30,11 +30,15 @@ spring:
     baseline-on-migrate: true
 
 springdoc:
-  api-docs:
-    enabled: true
   swagger-ui:
     enabled: true
+    path: /swagger-ui.html
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
 
+application:
+  supported-currencies: USD, EUR, GBP
 
 bank:
   simulator:

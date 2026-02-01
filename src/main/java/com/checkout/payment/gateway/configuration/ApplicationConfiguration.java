@@ -1,28 +1,36 @@
 package com.checkout.payment.gateway.configuration;
 
-import io.netty.channel.ChannelOption;
+import com.checkout.payment.gateway.client.BankClient;
 import java.time.Duration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.client.reactive.ReactorClientHttpConnector;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.netty.http.client.HttpClient;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.support.RestClientAdapter;
+import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 @Configuration
 @EnableConfigurationProperties(BankSimulatorProperties.class)
 public class ApplicationConfiguration {
 
   @Bean
-  public WebClient bankSimulatorClient(BankSimulatorProperties bankSimulatorProperties) {
+  public RestClient bankSimulatorRestClient(BankSimulatorProperties bankSimulatorProperties) {
+    SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+    requestFactory.setConnectTimeout(Duration.ofMillis(bankSimulatorProperties.timeout().connect()));
+    requestFactory.setReadTimeout(Duration.ofMillis(bankSimulatorProperties.timeout().read()));
 
-    HttpClient httpClient = HttpClient.create()
-        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, bankSimulatorProperties.timeout().connect())
-        .responseTimeout(Duration.ofMillis(bankSimulatorProperties.timeout().read()));
-
-    return WebClient.builder()
+    return RestClient.builder()
         .baseUrl(bankSimulatorProperties.url())
-        .clientConnector(new ReactorClientHttpConnector(httpClient))
+        .requestFactory(requestFactory)
         .build();
+  }
+
+  @Bean
+  public BankClient bankClient(RestClient restClient) {
+    HttpServiceProxyFactory factory = HttpServiceProxyFactory
+        .builderFor(RestClientAdapter.create(restClient))
+        .build();
+    return factory.createClient(BankClient.class);
   }
 }
