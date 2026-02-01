@@ -1,0 +1,34 @@
+# Build output
+build/
+.gradle/
+out/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+docs/
+
+# Test files (for faster builds)
+src/test/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker files
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Miscellaneous
+*.log
+*.tmp

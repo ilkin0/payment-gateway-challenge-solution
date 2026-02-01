@@ -1,6 +1,5 @@
 package com.checkout.payment.gateway.controller;
 
-import com.checkout.payment.gateway.model.GetPaymentResponse;
 import com.checkout.payment.gateway.model.PostPaymentResponse;
 import com.checkout.payment.gateway.service.PaymentGatewayService;
 import java.util.UUID;
@@ -12,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api/v1/payments")
 public class PaymentGatewayController {
 
   private final PaymentGatewayService paymentGatewayService;
@@ -21,7 +20,7 @@ public class PaymentGatewayController {
     this.paymentGatewayService = paymentGatewayService;
   }
 
-  @GetMapping("/payment/{id}")
+  @GetMapping("/{id}")
   public ResponseEntity<PostPaymentResponse> getPostPaymentEventById(@PathVariable UUID id) {
     return new ResponseEntity<>(paymentGatewayService.getPaymentById(id), HttpStatus.OK);
   }

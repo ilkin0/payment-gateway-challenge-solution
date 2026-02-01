@@ -4,6 +4,7 @@ import com.checkout.payment.gateway.enums.PaymentStatus;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -14,6 +15,7 @@ import org.springframework.data.relational.core.mapping.Table;
 @ToString
 @Getter
 @Setter
+@Builder
 @Table(name = "payments")
 public class Payment {
 
