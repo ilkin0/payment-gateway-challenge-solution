@@ -1,0 +1,16 @@
+server:
+  port: 8090
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+
+bank:
+  simulator:
+    url: ${BANK_SIMULATOR_URL:http://localhost:8080}
+    timeout:
+      connect: 10000
+      read: 10000
