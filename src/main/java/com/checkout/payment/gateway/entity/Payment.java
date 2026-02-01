@@ -9,6 +9,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.ReadOnlyProperty;
+import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -17,11 +19,16 @@ import org.springframework.data.relational.core.mapping.Table;
 @Setter
 @Builder
 @Table(name = "payments")
-public class Payment {
+public class Payment implements Persistable<UUID> {
 
   @Id
   @Column("id")
   private UUID id;
+
+  @Override
+  public boolean isNew() {
+    return true;
+  }
 
   @Column("card_number_last_four")
   private String cardNumberLastFour;
@@ -48,5 +55,6 @@ public class Payment {
   private UUID idempotencyKey;
 
   @Column("created_at")
+  @ReadOnlyProperty
   private Instant createdAt;
 }

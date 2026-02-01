@@ -1,13 +1,23 @@
 package com.checkout.payment.gateway.service;
 
+import com.checkout.payment.gateway.client.BankClient;
+import com.checkout.payment.gateway.client.BankPaymentRequest;
+import com.checkout.payment.gateway.client.BankPaymentResponse;
+import com.checkout.payment.gateway.client.BankPaymentResult;
+import com.checkout.payment.gateway.entity.Payment;
+import com.checkout.payment.gateway.enums.PaymentStatus;
 import com.checkout.payment.gateway.exception.PaymentNotFoundException;
+import com.checkout.payment.gateway.exception.PaymentProcessingException;
+import com.checkout.payment.gateway.model.PaymentResponse;
 import com.checkout.payment.gateway.model.PostPaymentRequest;
-import com.checkout.payment.gateway.model.PostPaymentResponse;
 import com.checkout.payment.gateway.repository.PaymentRepository;
+import java.math.BigDecimal;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -15,15 +25,71 @@ import org.springframework.stereotype.Service;
 public class PaymentGatewayService {
 
   private final PaymentRepository paymentRepository;
+  private final BankClient bankClient;
 
-  public PostPaymentResponse getPaymentById(UUID id) {
+  public PaymentResponse getPaymentById(UUID id) {
     log.debug("Requesting access to to payment with ID {}", id);
     return paymentRepository.findById(id)
-        .map(PostPaymentResponse::fromEntity)
+        .map(PaymentResponse::fromEntity)
         .orElseThrow(() -> new PaymentNotFoundException(id));
   }
 
-  public UUID processPayment(PostPaymentRequest paymentRequest) {
-    return UUID.randomUUID();
+  @Transactional
+  public PaymentResponse processPayment(PostPaymentRequest request, UUID idempotencyKey) {
+    log.info("Processing payment request");
+
+    if (idempotencyKey != null) {
+      Optional<PaymentResponse> existingPayment = findByIdempotencyKey(idempotencyKey);
+      if (existingPayment.isPresent()) {
+        log.info("Idempotent request - returning existing payment");
+        return existingPayment.get();
+      }
+    }
+
+    BankPaymentRequest bankRequest = BankPaymentRequest.from(request);
+
+    BankPaymentResult result;
+    try {
+      BankPaymentResponse response = bankClient.processPayment(bankRequest);
+      result = new BankPaymentResult.Success(response.authorized(), response.authorizationCode());
+    } catch (Exception e) {
+      log.error("Bank communication failed: {}", e.getMessage());
+      result = new BankPaymentResult.BankUnavailable(e.getMessage());
+    }
+
+    return switch (result) {
+      case BankPaymentResult.Success success -> handleBankSuccess(request, success, idempotencyKey);
+      case BankPaymentResult.BankUnavailable unavailable -> handleBankFailure(unavailable);
+    };
+  }
+
+  private PaymentResponse handleBankSuccess(PostPaymentRequest request,
+      BankPaymentResult.Success success, UUID idempotencyKey) {
+    PaymentStatus status =
+        success.authorized() ? PaymentStatus.AUTHORIZED : PaymentStatus.DECLINED;
+
+    Payment payment = Payment.builder()
+        .id(UUID.randomUUID())
+        .cardNumberLastFour(request.getLastFourDigits())
+        .expiryMonth(request.expiryMonth())
+        .expiryYear(request.expiryYear())
+        .currency(request.currency())
+        .amount(BigDecimal.valueOf(request.amount()))
+        .status(status)
+        .authorizationCode(success.authorizationCode())
+        .idempotencyKey(idempotencyKey)
+        .build();
+
+    Payment savedPayment = paymentRepository.save(payment);
+    return PaymentResponse.fromEntity(savedPayment);
+  }
+
+  private PaymentResponse handleBankFailure(BankPaymentResult.BankUnavailable unavailable) {
+    throw new PaymentProcessingException("Bank unavailable: " + unavailable.reason());
+  }
+
+  private Optional<PaymentResponse> findByIdempotencyKey(UUID idempotencyKey) {
+    return paymentRepository.findByIdempotencyKey(idempotencyKey)
+        .map(PaymentResponse::fromEntity);
   }
 }
