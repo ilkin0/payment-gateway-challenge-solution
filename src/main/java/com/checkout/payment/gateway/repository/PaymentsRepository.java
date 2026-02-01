@@ -12,7 +12,7 @@ public class PaymentsRepository {
   private final HashMap<UUID, PostPaymentResponse> payments = new HashMap<>();
 
   public void add(PostPaymentResponse payment) {
-    payments.put(payment.getId(), payment);
+    payments.put(payment.id(), payment);
   }
 
   public Optional<PostPaymentResponse> get(UUID id) {
