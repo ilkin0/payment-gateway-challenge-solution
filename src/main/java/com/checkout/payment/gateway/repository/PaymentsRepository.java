@@ -1,22 +1,13 @@
 package com.checkout.payment.gateway.repository;
 
-import com.checkout.payment.gateway.model.PostPaymentResponse;
-import java.util.HashMap;
+import com.checkout.payment.gateway.entity.Payment;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public class PaymentsRepository {
+public interface PaymentsRepository extends CrudRepository<Payment, UUID> {
 
-  private final HashMap<UUID, PostPaymentResponse> payments = new HashMap<>();
-
-  public void add(PostPaymentResponse payment) {
-    payments.put(payment.id(), payment);
-  }
-
-  public Optional<PostPaymentResponse> get(UUID id) {
-    return Optional.ofNullable(payments.get(id));
-  }
-
+  Optional<Payment> findByIdempotencyKey(UUID key);
 }
