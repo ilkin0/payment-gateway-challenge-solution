@@ -25,13 +25,20 @@ import org.springframework.transaction.annotation.Transactional;
 public class PaymentGatewayService {
 
   private final PaymentRepository paymentRepository;
+  private final PaymentCacheService cacheService;
   private final BankClient bankClient;
 
   public PaymentResponse getPaymentById(UUID id) {
     log.debug("Requesting access to to payment with ID {}", id);
-    return paymentRepository.findById(id)
-        .map(PaymentResponse::fromEntity)
-        .orElseThrow(() -> new PaymentNotFoundException(id));
+
+    return cacheService.getByPaymentId(id)
+        .orElseGet(() -> paymentRepository.findById(id)
+            .map(payment -> {
+              PaymentResponse paymentResponse = PaymentResponse.fromEntity(payment);
+              cacheService.cachePayment(paymentResponse, payment.getIdempotencyKey());
+              return paymentResponse;
+            })
+            .orElseThrow(() -> new PaymentNotFoundException(id)));
   }
 
   @Transactional
@@ -81,7 +88,9 @@ public class PaymentGatewayService {
         .build();
 
     Payment savedPayment = paymentRepository.save(payment);
-    return PaymentResponse.fromEntity(savedPayment);
+    PaymentResponse paymentResponse = PaymentResponse.fromEntity(savedPayment);
+    cacheService.cachePayment(paymentResponse, idempotencyKey);
+    return paymentResponse;
   }
 
   private PaymentResponse handleBankFailure(BankPaymentResult.BankUnavailable unavailable) {
@@ -89,7 +98,13 @@ public class PaymentGatewayService {
   }
 
   private Optional<PaymentResponse> findByIdempotencyKey(UUID idempotencyKey) {
-    return paymentRepository.findByIdempotencyKey(idempotencyKey)
-        .map(PaymentResponse::fromEntity);
+    return cacheService.getByIdempotencyKey(idempotencyKey)
+        .or(() -> paymentRepository.findByIdempotencyKey(idempotencyKey)
+            .map(payment -> {
+              PaymentResponse paymentResponse = PaymentResponse.fromEntity(payment);
+              cacheService.cachePayment(paymentResponse, payment.getIdempotencyKey());
+              return paymentResponse;
+            })
+        );
   }
 }
