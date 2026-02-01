@@ -10,7 +10,11 @@ services:
       - type: bind
         source: ./imposters
         target: /imposters
-
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "localhost", "8080" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   postgres:
     container_name: payments_db
@@ -29,7 +33,60 @@ services:
       timeout: 5s
       retries: 10
 
+  payment-gateway:
+    container_name: payment_gateway
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8090:8090"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: payments_db
+      DB_USER: payments_user
+      DB_PASSWORD: payments_password
+      BANK_SIMULATOR_URL: http://bank_simulator:8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+      bank_simulator:
+        condition: service_healthy
+
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    depends_on:
+      - payment-gateway
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: false
+    volumes:
+      - ./observability/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./observability/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
 
 volumes:
   pgdata:
     driver: local
+  prometheus_data:
+  grafana_data:

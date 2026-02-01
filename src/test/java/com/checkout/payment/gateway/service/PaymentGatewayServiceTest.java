@@ -14,6 +14,7 @@ import com.checkout.payment.gateway.entity.Payment;
 import com.checkout.payment.gateway.enums.PaymentStatus;
 import com.checkout.payment.gateway.exception.PaymentNotFoundException;
 import com.checkout.payment.gateway.exception.PaymentProcessingException;
+import com.checkout.payment.gateway.metrics.PaymentMetrics;
 import com.checkout.payment.gateway.model.PaymentResponse;
 import com.checkout.payment.gateway.model.PostPaymentRequest;
 import com.checkout.payment.gateway.repository.PaymentRepository;
@@ -39,12 +40,16 @@ class PaymentGatewayServiceTest {
   @Mock
   private PaymentCacheService cacheService;
 
+  @Mock
+  private PaymentMetrics metrics;
+
   private PaymentGatewayService paymentGatewayService;
 
 
   @BeforeEach
   void setUp() {
-    paymentGatewayService = new PaymentGatewayService(paymentRepository, cacheService, bankClient);
+    paymentGatewayService = new PaymentGatewayService(paymentRepository, cacheService, metrics,
+        bankClient);
   }
 
   @Test
@@ -151,7 +156,7 @@ class PaymentGatewayServiceTest {
         () -> paymentGatewayService.processPayment(request, idempotencyKey)
     );
 
-    assertEquals("Bank unavailable: Connection error", exception.getMessage());
+    assertEquals("Unable to process payment: Connection error", exception.getMessage());
   }
 
   private PostPaymentRequest createPostPaymentRequest() {
