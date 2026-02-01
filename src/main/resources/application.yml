@@ -37,8 +37,21 @@ springdoc:
     enabled: true
     path: /v3/api-docs
 
+logging:
+  level:
+    root: INFO
+    com.checkout.payment.gateway: DEBUG
+    org.springframework.web: INFO
+    org.springframework.jdbc: INFO
+    com.zaxxer.hikari: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [%X{paymentId:-}|%X{cardLastFour:-}|%X{status:-}] - %msg%n"
+
 application:
   supported-currencies: USD, EUR, GBP
+  cache:
+    ttl: 900
+    max-size: 10_000
 
 bank:
   simulator:

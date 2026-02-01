@@ -11,7 +11,7 @@ import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 @Configuration
-@EnableConfigurationProperties(BankSimulatorProperties.class)
+@EnableConfigurationProperties({BankSimulatorProperties.class, CacheProperties.class})
 public class ApplicationConfiguration {
 
   @Bean

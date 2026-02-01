@@ -36,12 +36,15 @@ class PaymentGatewayServiceTest {
   @Mock
   private BankClient bankClient;
 
+  @Mock
+  private PaymentCacheService cacheService;
+
   private PaymentGatewayService paymentGatewayService;
 
 
   @BeforeEach
   void setUp() {
-    paymentGatewayService = new PaymentGatewayService(paymentRepository, bankClient);
+    paymentGatewayService = new PaymentGatewayService(paymentRepository, cacheService, bankClient);
   }
 
   @Test
@@ -57,6 +60,7 @@ class PaymentGatewayServiceTest {
         .status(PaymentStatus.AUTHORIZED)
         .build();
 
+    when(cacheService.getByPaymentId(id)).thenReturn(Optional.empty());
     when(paymentRepository.findById(id)).thenReturn(Optional.of(entity));
 
     PaymentResponse response = paymentGatewayService.getPaymentById(id);
@@ -75,6 +79,7 @@ class PaymentGatewayServiceTest {
   void getPaymentById_whenNotExists_shouldThrowException() {
     UUID id = UUID.randomUUID();
 
+    when(cacheService.getByPaymentId(id)).thenReturn(Optional.empty());
     when(paymentRepository.findById(id)).thenReturn(Optional.empty());
 
     PaymentNotFoundException exception = assertThrows(
@@ -91,6 +96,7 @@ class PaymentGatewayServiceTest {
     UUID idempotencyKey = UUID.randomUUID();
     BankPaymentResponse bankResponse = new BankPaymentResponse(true, "AUTH123");
 
+    when(cacheService.getByIdempotencyKey(idempotencyKey)).thenReturn(Optional.empty());
     when(paymentRepository.findByIdempotencyKey(idempotencyKey)).thenReturn(Optional.empty());
     when(bankClient.processPayment(any(BankPaymentRequest.class))).thenReturn(bankResponse);
     when(paymentRepository.save(any(Payment.class))).thenAnswer(
@@ -114,6 +120,7 @@ class PaymentGatewayServiceTest {
     UUID idempotencyKey = UUID.randomUUID();
     BankPaymentResponse bankResponse = new BankPaymentResponse(false, null);
 
+    when(cacheService.getByIdempotencyKey(idempotencyKey)).thenReturn(Optional.empty());
     when(paymentRepository.findByIdempotencyKey(idempotencyKey)).thenReturn(Optional.empty());
     when(bankClient.processPayment(any(BankPaymentRequest.class))).thenReturn(bankResponse);
     when(paymentRepository.save(any(Payment.class))).thenAnswer(
@@ -134,6 +141,7 @@ class PaymentGatewayServiceTest {
     PostPaymentRequest request = createPostPaymentRequest();
     UUID idempotencyKey = UUID.randomUUID();
 
+    when(cacheService.getByIdempotencyKey(idempotencyKey)).thenReturn(Optional.empty());
     when(paymentRepository.findByIdempotencyKey(idempotencyKey)).thenReturn(Optional.empty());
     when(bankClient.processPayment(any(BankPaymentRequest.class))).thenThrow(
         new RuntimeException("Connection error"));
