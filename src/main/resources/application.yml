@@ -1,5 +1,12 @@
 server:
   port: 8090
+  shutdown: graceful
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
+    connection-timeout: 5s
+    keep-alive-timeout: 30s
 
 spring:
   application:
@@ -36,6 +43,23 @@ springdoc:
   api-docs:
     enabled: true
     path: /v3/api-docs
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+  health:
+    db:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
 
 logging:
   level:
