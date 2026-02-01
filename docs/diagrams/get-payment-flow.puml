@@ -1,0 +1,33 @@
+@startuml GET Payment Flow
+title GET /api/payment/{id}
+
+skinparam backgroundColor white
+skinparam sequenceMessageAlign center
+
+actor Client
+participant "Payment\nGateway" as Gateway
+database "Cache" as Cache
+database "PostgreSQL" as DB
+
+== Retrieve Payment ==
+
+Client -> Gateway: GET /api/payment/{id}
+
+Gateway -> Cache: Get by payment ID
+
+alt Found in cache
+    Cache --> Gateway: Payment data
+    Gateway --> Client: 200 OK
+else Not in cache
+    Gateway -> DB: Find by ID
+
+    alt Found in DB
+        DB --> Gateway: Payment entity
+        Gateway -> Cache: Cache payment
+        Gateway --> Client: 200 OK
+    else Not found
+        Gateway --> Client: 404 Not Found
+    end
+end
+
+@enduml

@@ -1,0 +1,54 @@
+@startuml POST Payment Flow
+title POST /api/payment
+
+skinparam backgroundColor white
+skinparam sequenceMessageAlign center
+
+actor Client
+participant "Payment\nGateway" as Gateway
+database "Cache" as Cache
+database "PostgreSQL" as DB
+participant "Bank\nSimulator" as Bank
+
+== Process Payment ==
+
+Client -> Gateway: POST /api/payment\n+ Idempotency-Key (optional)
+
+alt Idempotency-Key provided
+    Gateway -> Cache: Check idempotency key
+    alt Found in cache
+        Cache --> Gateway: Existing payment
+        Gateway --> Client: 200 OK (cached)
+    else Not in cache
+        Gateway -> DB: Check idempotency key
+        alt Found in DB
+            DB --> Gateway: Existing payment
+            Gateway --> Client: 200 OK (from DB)
+        end
+    end
+end
+
+Gateway -> Gateway: Validate request
+
+alt Validation failed
+    Gateway --> Client: 400 Bad Request\n(Rejected)
+else Validation passed
+    Gateway -> Bank: POST /payments
+
+    alt Card ends in 1,3,5,7,9
+        Bank --> Gateway: 200 OK\n{authorized: true}
+        Gateway -> DB: Save payment (Authorized)
+        Gateway -> Cache: Cache payment
+        Gateway --> Client: 200 OK\n{status: "Authorized"}
+    else Card ends in 2,4,6,8
+        Bank --> Gateway: 200 OK\n{authorized: false}
+        Gateway -> DB: Save payment (Declined)
+        Gateway -> Cache: Cache payment
+        Gateway --> Client: 200 OK\n{status: "Declined"}
+    else Card ends in 0
+        Bank --> Gateway: 503 Service Unavailable
+        Gateway --> Client: 502 Bad Gateway
+    end
+end
+
+@enduml
