@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.checkout.payment.gateway.configuration.CacheProperties;
 import com.checkout.payment.gateway.enums.PaymentStatus;
 import com.checkout.payment.gateway.model.PaymentResponse;
 import java.time.Duration;
@@ -18,7 +19,7 @@ class PaymentCacheServiceTest {
 
   @BeforeEach
   void setUp() {
-    cacheService = new PaymentCacheService();
+    cacheService = new PaymentCacheService(new CacheProperties(900L, 10000));
   }
 
   private PaymentResponse createResponse(UUID id) {
@@ -175,7 +176,7 @@ class PaymentCacheServiceTest {
 
   @Test
   void cachePayment_whenCacheFull_shouldEvictExpiredEntries() {
-    PaymentCacheService smallCache = new PaymentCacheService(Duration.ofMillis(1), 2);
+    PaymentCacheService smallCache = new PaymentCacheService(new CacheProperties(0L, 2));
 
     UUID id1 = UUID.randomUUID();
     UUID id2 = UUID.randomUUID();
@@ -197,13 +198,13 @@ class PaymentCacheServiceTest {
 
   @Test
   void getByPaymentId_whenExpired_shouldReturnEmpty() {
-    PaymentCacheService shortTtlCache = new PaymentCacheService(Duration.ofMillis(1), 100);
+    PaymentCacheService shortTtlCache = new PaymentCacheService(new CacheProperties(1L, 100));
 
     UUID id = UUID.randomUUID();
     shortTtlCache.cachePayment(createResponse(id), UUID.randomUUID());
 
     try {
-      Thread.sleep(10);
+      Thread.sleep(1100);
     } catch (InterruptedException _) {
       Thread.currentThread().interrupt();
     }
@@ -214,14 +215,14 @@ class PaymentCacheServiceTest {
 
   @Test
   void getByIdempotencyKey_whenPaymentExpired_shouldReturnEmpty() {
-    PaymentCacheService shortTtlCache = new PaymentCacheService(Duration.ofMillis(1), 100);
+    PaymentCacheService shortTtlCache = new PaymentCacheService(new CacheProperties(1L, 100));
 
     UUID id = UUID.randomUUID();
     UUID key = UUID.randomUUID();
     shortTtlCache.cachePayment(createResponse(id), key);
 
     try {
-      Thread.sleep(10);
+      Thread.sleep(1100);
     } catch (InterruptedException _) {
       Thread.currentThread().interrupt();
     }

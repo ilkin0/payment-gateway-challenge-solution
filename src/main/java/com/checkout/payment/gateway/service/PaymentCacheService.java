@@ -1,5 +1,6 @@
 package com.checkout.payment.gateway.service;
 
+import com.checkout.payment.gateway.configuration.CacheProperties;
 import com.checkout.payment.gateway.model.PaymentResponse;
 import java.time.Duration;
 import java.time.Instant;
@@ -19,21 +20,14 @@ import org.springframework.stereotype.Service;
 @Service
 public class PaymentCacheService {
 
-  private static final Duration DEFAULT_CACHE_TTL = Duration.ofMinutes(15);
-  private static final int DEFAULT_MAX_CACHE_SIZE = 10_000;
-
   private final Map<UUID, CacheEntry> paymentCache = new ConcurrentHashMap<>();
   private final Map<UUID, UUID> idempotencyKeyIndex = new ConcurrentHashMap<>();
   private final Duration cacheTtl;
   private final int maxCacheSize;
 
-  public PaymentCacheService() {
-    this(DEFAULT_CACHE_TTL, DEFAULT_MAX_CACHE_SIZE);
-  }
-
-  PaymentCacheService(Duration cacheTtl, int maxCacheSize) {
-    this.cacheTtl = cacheTtl;
-    this.maxCacheSize = maxCacheSize;
+  public PaymentCacheService(CacheProperties cacheProperties) {
+    this.cacheTtl = Duration.ofSeconds(cacheProperties.ttl());
+    this.maxCacheSize = cacheProperties.maxSize();
   }
 
   public void cachePayment(PaymentResponse response, UUID idempotencyKey) {

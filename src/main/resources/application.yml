@@ -49,6 +49,9 @@ logging:
 
 application:
   supported-currencies: USD, EUR, GBP
+  cache:
+    ttl: 900
+    max-size: 10_000
 
 bank:
   simulator:
