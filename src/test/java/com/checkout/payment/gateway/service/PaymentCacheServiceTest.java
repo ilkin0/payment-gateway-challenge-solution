@@ -176,7 +176,7 @@ class PaymentCacheServiceTest {
 
   @Test
   void cachePayment_whenCacheFull_shouldEvictExpiredEntries() {
-    PaymentCacheService smallCache = new PaymentCacheService(new CacheProperties(0L, 2));
+    PaymentCacheService smallCache = new PaymentCacheService(new CacheProperties(1L, 2));
 
     UUID id1 = UUID.randomUUID();
     UUID id2 = UUID.randomUUID();

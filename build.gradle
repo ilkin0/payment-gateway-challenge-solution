@@ -1,5 +1,6 @@
 plugins {
   id 'java'
+  id 'jacoco'
   id 'org.springframework.boot' version '4.0.2'
   id 'io.spring.dependency-management' version '1.1.7'
 }
@@ -50,6 +51,77 @@ dependencyManagement {
   }
 }
 
+
 tasks.named('test') {
   useJUnitPlatform()
+  finalizedBy jacocoTestReport
+}
+
+jacoco {
+  toolVersion = "0.8.14"
+}
+
+tasks.withType(Test).configureEach {
+  jacoco {
+    includes = ['com.checkout.*']
+  }
+}
+
+jacocoTestReport {
+  dependsOn test
+  reports {
+    xml.required = true
+    html.required = true
+    csv.required = false
+  }
+
+  afterEvaluate {
+    classDirectories.setFrom(files(classDirectories.files.collect {
+      fileTree(dir: it, exclude: [
+          '**/config/**',
+          '**/entity/**',
+          '**/model/**',
+          '**/enums/**',
+          '**/exception/**',
+          '**/PaymentGatewayApplication.class'
+      ])
+    }))
+  }
+}
+
+jacocoTestCoverageVerification {
+  dependsOn jacocoTestReport
+
+  violationRules {
+    rule {
+      limit {
+        minimum = 0.90
+      }
+    }
+
+    rule {
+      element = 'CLASS'
+      excludes = [
+          'com.checkout.payment.gateway.config.*',
+          'com.checkout.payment.gateway.entity.*',
+          'com.checkout.payment.gateway.model.*',
+          'com.checkout.payment.gateway.enums.*',
+          'com.checkout.payment.gateway.exception.*',
+          'com.checkout.payment.gateway.metrics.*',
+          'com.checkout.payment.gateway.PaymentGatewayApplication'
+      ]
+      limit {
+        counter = 'LINE'
+        minimum = 0.90
+      }
+      limit {
+        counter = 'BRANCH'
+        minimum = 0.80
+      }
+    }
+  }
+}
+
+tasks.named('check') {
+  dependsOn jacocoTestCoverageVerification
 }
