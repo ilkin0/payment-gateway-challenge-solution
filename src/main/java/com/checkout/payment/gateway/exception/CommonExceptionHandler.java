@@ -11,11 +11,14 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 @Slf4j
 public class CommonExceptionHandler {
 
+  @ExceptionHandler(PaymentNotFoundException.class)
+  public ResponseEntity<ErrorResponse> handlePaymentNotFoundException(PaymentNotFoundException ex) {
+    return new ResponseEntity<>(new ErrorResponse(ex.getMessage()), HttpStatus.NOT_FOUND);
+  }
 
   @ExceptionHandler(PaymentProcessingException.class)
-  public ResponseEntity<ErrorResponse> handleException(PaymentProcessingException ex) {
-    log.error("Exception happened", ex);
-    return new ResponseEntity<>(new ErrorResponse("Page not found"),
-        HttpStatus.NOT_FOUND);
+  public ResponseEntity<ErrorResponse> handlePaymentProcessingException(
+      PaymentProcessingException ex) {
+    return new ResponseEntity<>(new ErrorResponse(ex.getMessage()), HttpStatus.BAD_GATEWAY);
   }
 }

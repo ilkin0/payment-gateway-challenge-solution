@@ -1,8 +1,11 @@
 package com.checkout.payment.gateway.model;
 
+import com.checkout.payment.gateway.entity.Payment;
 import com.checkout.payment.gateway.enums.PaymentStatus;
 import java.util.UUID;
+import lombok.Builder;
 
+@Builder
 public record PostPaymentResponse(
     UUID id,
     PaymentStatus status,
@@ -13,4 +16,15 @@ public record PostPaymentResponse(
     int amount
 ) {
 
+  public static PostPaymentResponse fromEntity(Payment payment) {
+    return PostPaymentResponse.builder()
+        .id(payment.getId())
+        .status(payment.getStatus())
+        .cardNumberLastFour(Integer.parseInt(payment.getCardNumberLastFour()))
+        .expiryMonth(payment.getExpiryMonth())
+        .expiryYear(payment.getExpiryYear())
+        .currency(payment.getCurrency())
+        .amount(payment.getAmount().intValue())
+        .build();
+  }
 }
